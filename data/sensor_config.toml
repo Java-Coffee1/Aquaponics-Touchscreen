@@ -1,0 +1,17 @@
+
+
+
+
+
+
+
+
+[ph_sensor]
+name = ph_sensor
+type = twopoint
+current = 6.7
+max = 1500
+min = 1000
+last_max = 1500
+last_min = 1000
+
