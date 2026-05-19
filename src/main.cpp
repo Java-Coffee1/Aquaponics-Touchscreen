@@ -5,7 +5,7 @@
 #include <demos/lv_demos.h>
 #include <esp_now.h>
 #include <WiFi.h>
-#include <Arduino_JSON.h>
+#include <ArduinoJson.h>
 #include "esp_task_wdt.h"
 #include "ui.h"
 #include "touch_ui.h"
@@ -17,12 +17,6 @@
 
 const char* ssid = "AquaponicsIOT";
 const char* password = "aquadma134!";
-
-std::string sensor_name;
-double current_value;
-double min_value;
-double max_value;
-double sensor_hight;;
 
 
 void wifi_init(){
@@ -53,6 +47,21 @@ void wifi_init(){
 
 void setup() {
     Serial.begin(115200);
+    if(!LittleFS.begin(true)){
+        Serial.println("An Error has occurred while mounting LittleFS");
+        return;
+    }
+    File file = LittleFS.open("/sensor_config.json", "r");
+    if(!file){
+        Serial.println("Failed to open file for reading");
+        return;
+    }
+    
+    Serial.println("File Content:");
+    while(file.available()){
+        Serial.write(file.read());
+    }
+    file.close();
     static esp_lcd_panel_handle_t panel_handle = NULL;
     static esp_lcd_touch_handle_t tp_handle = NULL;
 
@@ -68,23 +77,7 @@ void setup() {
         setup_ui();
         lvgl_port_unlock();
     }
-    wifi_init();
-
-    if(!LittleFS.begin(true)){
-        Serial.println("An Error has occurred while mounting LittleFS");
-        return;
-    }
-    File file = LittleFS.open("/sensor_config.toml");
-    if(!file){
-        Serial.println("Failed to open file for reading");
-        return;
-    }
-    
-    Serial.println("File Content:");
-    while(file.available()){
-        Serial.write(file.read());
-    }
-    file.close();
+    // wifi_init();
     // esp_task_wdt_config_t wdt_config = {
     //     .timeout_ms = 5000,
     //     .trigger_panic = true,

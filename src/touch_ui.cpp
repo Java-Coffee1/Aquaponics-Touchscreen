@@ -2,20 +2,38 @@
 #include "screens.h"
 
 
+static String sensors_list[MAX_SENSORS];
+static int sensor_count = 0;
+
+void get_sensor_list() {
+    File file = LittleFS.open("/sensor_config.json", "r");
+    if (!file) return;
+
+    StaticJsonDocument<4096> doc;
+    DeserializationError err = deserializeJson(doc, file);
+    file.close();
+
+    if (err) return;
+
+    sensor_count = 0;
+
+    // -------- sensors_two_point --------
+    JsonArray arr1 = doc["sensors_two_point"];
+    for (JsonObject s : arr1) {
+        if (sensor_count < MAX_SENSORS) {
+            sensors_list[sensor_count++] = s["id"].as<String>();
+        }
+    }
+
+    // -------- sensors_height --------
+    JsonArray arr2 = doc["sensors_height"];
+    for (JsonObject s : arr2) {
+        if (sensor_count < MAX_SENSORS) {
+            sensors_list[sensor_count++] = s["id"].as<String>();
+        }
+    }
+}
 ///_____________________________ CODE FOR THE BUTTONS FORMAT_____________________________________
-
-// Global sensor list
-static const char * sensors[] = {
-    "ph_sensor",
-    "Do_Sensor",
-    "water_level_sensor1",
-    "water_level_sensor2",
-    "water_level_sensor3"
-};
-
-static const int num_of_sensors =
-    sizeof(sensors) / sizeof(sensors[0]);
-
 //shity code for the button on click will be changed later do do my sity codinh 
 static void btn_event_cb(lv_event_t * e){
     if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
@@ -23,7 +41,6 @@ static void btn_event_cb(lv_event_t * e){
         // Get sensor name from user data
         const char * sensor_name =
             (const char *)lv_event_get_user_data(e);
-
         printf("Button clicked: %s\n", sensor_name);
     }
 }
@@ -43,7 +60,7 @@ static void btn_event_cb(lv_event_t * e){
 // Create sensor buttons
 void create_sensor_list(lv_obj_t * parent)
 {
-    for (int i = 0; i < num_of_sensors; i++) {
+    for (int i = 0; i < sensor_count; i++) {
 
         lv_obj_t * item = lv_btn_create(parent);
 
@@ -54,12 +71,11 @@ void create_sensor_list(lv_obj_t * parent)
 
         lv_obj_t * label = lv_label_create(item);
 
-        lv_label_set_text(label, sensors[i]);
-
+        lv_label_set_text(label, sensors_list[i].c_str());
         lv_obj_center(label);
 
-        // Pass sensor name into callback
-        lv_obj_add_event_cb(item, btn_event_cb, LV_EVENT_CLICKED, (void*)sensors[i]);
+        lv_obj_add_event_cb(item, btn_event_cb, LV_EVENT_CLICKED,
+                            (void*)sensors_list[i].c_str());
     }
 }
 
@@ -131,17 +147,33 @@ void create_numpad(lv_obj_t * parent, lv_obj_t * parent2)
 
 
 
+void refresh_data(){
+
+    Serial.println("STEP 1: refresh_data called");
+
+    get_sensor_list();
+
+    Serial.println("STEP 2: after JSON load");
+
+    Serial.print("sensor_count = ");
+    Serial.println(sensor_count);
+
+    lv_obj_clean(objects.sensor_list);
+
+    Serial.println("STEP 3: creating buttons");
+
+    create_sensor_list(objects.sensor_list);
+
+    Serial.println("STEP 4: done");
+}
 
 void setup_ui()
 {
     create_numpad(objects.numpad, objects.number_area);
-
-    // Optional: auto-stack buttons vertically
     lv_obj_set_layout(objects.sensor_list, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(objects.sensor_list,
                          LV_FLEX_FLOW_COLUMN);
 
-    create_sensor_list(objects.sensor_list);
-
+    refresh_data();
 }
 

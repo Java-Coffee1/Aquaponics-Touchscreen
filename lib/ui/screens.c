@@ -40,8 +40,8 @@ void create_screen_main() {
             // numpad
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.numpad = obj;
-            lv_obj_set_pos(obj, 529, 216);
-            lv_obj_set_size(obj, 230, 240);
+            lv_obj_set_pos(obj, 529, 207);
+            lv_obj_set_size(obj, 230, 249);
             lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -72,7 +72,7 @@ void create_screen_main() {
             // number_area
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.number_area = obj;
-            lv_obj_set_pos(obj, 504, 156);
+            lv_obj_set_pos(obj, 504, 147);
             lv_obj_set_size(obj, 280, 60);
             lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
