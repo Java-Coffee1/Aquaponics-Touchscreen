@@ -503,10 +503,10 @@
             {
               "objID": "b97cc41b-7bdc-453f-acad-425fff7f4634",
               "type": "LVGLContainerWidget",
-              "left": 19,
-              "top": 90,
-              "width": 329,
-              "height": 366,
+              "left": 29,
+              "top": 171,
+              "width": 275,
+              "height": 285,
               "customInputs": [],
               "customOutputs": [],
               "style": {

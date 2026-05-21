@@ -132,8 +132,8 @@ void create_screen_calibration() {
             // info table
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.info_table = obj;
-            lv_obj_set_pos(obj, 19, 90);
-            lv_obj_set_size(obj, 329, 366);
+            lv_obj_set_pos(obj, 29, 171);
+            lv_obj_set_size(obj, 275, 285);
             lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);

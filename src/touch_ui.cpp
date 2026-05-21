@@ -43,6 +43,8 @@ struct SensorInformation {
     float current;
     float min;
     float max;
+    float last_min;
+    float last_max;
     float height_offset;
     float last_height_offset;
 };
@@ -51,6 +53,8 @@ enum SensorField {
     CURRENT,
     MIN,
     MAX,
+    LAST_MIN,
+    LAST_MAX,
     HEIGHT_OFFSET,
     LAST_HEIGHT_OFFSET
 };
@@ -59,20 +63,48 @@ SensorInformation sensors_info[MAX_SENSORS];
 
 float get_sensor_value(const String &id, SensorField field)
 {
-    for (int i = 0; i < sensor_count; i++) {
+    File file = LittleFS.open("/sensor_config.json", "r");
+    if (!file) return NAN;
+    StaticJsonDocument<4096> doc;
+    DeserializationError err = deserializeJson(doc, file);
+    file.close();
+    if (err) return NAN;
+    JsonArray arr1 = doc["sensors_two_point"];
+    JsonArray arr2 = doc["sensors_height"];
 
-        if (sensors_info[i].id == id) {
+    auto searchArray = [&](JsonArray arr) -> float {
+        for (JsonObject s : arr) {
+            if (s["id"].as<String>() == id) {
 
-            switch (field) {
-                case CURRENT: return sensors_info[i].current;
-                case MIN: return sensors_info[i].min;
-                case MAX: return sensors_info[i].max;
-                case HEIGHT_OFFSET: return sensors_info[i].height_offset;
-                case LAST_HEIGHT_OFFSET: return sensors_info[i].last_height_offset;
+                switch (field) {
+                    case CURRENT:
+                        return s["current"] | NAN;
+
+                    case MIN:
+                        return s["min"] | NAN;
+
+                    case MAX:
+                        return s["max"] | NAN;
+
+                    case LAST_MIN:
+                        return s["last_min"] | NAN;
+
+                    case LAST_MAX:
+                        return s["last_max"] | NAN;
+
+                    case HEIGHT_OFFSET:
+                        return s["height_offset"] | NAN;
+
+                    case LAST_HEIGHT_OFFSET:
+                        return s["last_height_offset"] | NAN;
+                }
             }
         }
-    }
-    return NAN;
+        return NAN;
+    };
+    float result = searchArray(arr1);
+    if (!isnan(result)) return result;
+    return searchArray(arr2);
 }
 ///_____________________________ CODE FOR THE Button FORMAT_____________________________________
 //shity code for the button on click will be changed later do do my sity codinh 
@@ -206,33 +238,42 @@ static void table_style(lv_event_t * e)
     }
 }
 
+// Little helper to formt the valuss 
+std::string fmt_float(float v, int precision = 2)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.*f", precision, v);
+    return std::string(buf);
+}
 void information_table(lv_obj_t * parent, const std::string &sensor_name)
 {
     lv_obj_t * table = lv_table_create(parent);
     //get sensor type and value 
-    std::string current = std::to_string(get_sensor_value(sensor_name.c_str(), CURRENT));
+    std::string current  = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT));
+    std::string max      = fmt_float(get_sensor_value(sensor_name.c_str(), MAX));
+    std::string min      = fmt_float(get_sensor_value(sensor_name.c_str(), MIN));
+    std::string last_min = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MIN));
+    std::string last_max = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MAX));
+
     /*Fill the first column*/
     lv_table_set_cell_value(table, 0, 0, "Name");
     lv_table_set_cell_value(table, 1, 0, "Current");
-    lv_table_set_cell_value(table, 2, 0, "Banana");
-    lv_table_set_cell_value(table, 3, 0, "Lemon");
-    lv_table_set_cell_value(table, 4, 0, "Grape");
-    lv_table_set_cell_value(table, 5, 0, "Melon");
-    lv_table_set_cell_value(table, 6, 0, "Peach");
-    lv_table_set_cell_value(table, 7, 0, "Nuts");
+    lv_table_set_cell_value(table, 2, 0, "Min");
+    lv_table_set_cell_value(table, 3, 0, "Max");
+    lv_table_set_cell_value(table, 4, 0, "Last Min");
+    lv_table_set_cell_value(table, 5, 0, "Last Max");
 
     /*Fill the second column*/
     lv_table_set_cell_value(table, 0, 1, "Value");
     lv_table_set_cell_value(table, 1, 1, current.c_str());
-    lv_table_set_cell_value(table, 2, 1, "$4");
-    lv_table_set_cell_value(table, 3, 1, "$6");
-    lv_table_set_cell_value(table, 4, 1, "$2");
-    lv_table_set_cell_value(table, 5, 1, "$5");
-    lv_table_set_cell_value(table, 6, 1, "$1");
-    lv_table_set_cell_value(table, 7, 1, "$9");
+    lv_table_set_cell_value(table, 2, 1, min.c_str());
+    lv_table_set_cell_value(table, 3, 1, max.c_str());
+    lv_table_set_cell_value(table, 4, 1, last_min.c_str());
+    lv_table_set_cell_value(table, 5, 1, last_max.c_str());
+
 
     /*Set a smaller height to the table. It'll make it scrollable*/
-    lv_obj_set_height(table, 200);
+    lv_obj_set_height(table, 400);
     lv_obj_center(table);
 
     /*Add an event callback to to apply some custom drawing*/
