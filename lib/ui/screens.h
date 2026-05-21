@@ -12,19 +12,19 @@ extern "C" {
 enum ScreensEnum {
     _SCREEN_ID_FIRST = 1,
     SCREEN_ID_MAIN = 1,
-    SCREEN_ID_CALIBRATION = 2,
+    SCREEN_ID_TWOPOINT_CALIBRATION = 2,
     _SCREEN_ID_LAST = 2
 };
 
 typedef struct _objects_t {
     lv_obj_t *main;
-    lv_obj_t *calibration;
+    lv_obj_t *twopoint_calibration;
     lv_obj_t *sensor_list;
     lv_obj_t *number_area;
     lv_obj_t *numpad;
     lv_obj_t *back;
-    lv_obj_t *change_value;
     lv_obj_t *info_table;
+    lv_obj_t *set_cali;
 } objects_t;
 
 extern objects_t objects;
@@ -32,8 +32,8 @@ extern objects_t objects;
 void create_screen_main();
 void tick_screen_main();
 
-void create_screen_calibration();
-void tick_screen_calibration();
+void create_screen_twopoint_calibration();
+void tick_screen_twopoint_calibration();
 
 void tick_screen_by_id(enum ScreensEnum screenId);
 void tick_screen(int screen_index);

@@ -1,122 +1,21 @@
 #include "touch_ui.h"
 #include "screens.h"
 
-    std::string current_sensor_edit = "null";
-
-static String sensors_list[MAX_SENSORS];
-static int sensor_count = 0;
-
-void get_sensor_list() {
-    File file = LittleFS.open("/sensor_config.json", "r");
-    if (!file) return;
-
-    StaticJsonDocument<4096> doc;
-    DeserializationError err = deserializeJson(doc, file);
-    file.close();
-
-    if (err) return;
-
-    sensor_count = 0;
-
-    // -------- sensors_two_point --------
-    JsonArray arr1 = doc["sensors_two_point"];
-    for (JsonObject s : arr1) {
-        if (sensor_count < MAX_SENSORS) {
-            sensors_list[sensor_count++] = s["id"].as<String>();
-        }
-    }
-
-    // -------- sensors_height --------
-    JsonArray arr2 = doc["sensors_height"];
-    for (JsonObject s : arr2) {
-        if (sensor_count < MAX_SENSORS) {
-            sensors_list[sensor_count++] = s["id"].as<String>();
-        }
-    }
-}
+std::string current_sensor_edit = "null";
 
 
-struct SensorInformation {
-    String id;
-    String type;
 
-    float current;
-    float min;
-    float max;
-    float last_min;
-    float last_max;
-    float height_offset;
-    float last_height_offset;
-};
-
-enum SensorField {
-    CURRENT,
-    MIN,
-    MAX,
-    LAST_MIN,
-    LAST_MAX,
-    HEIGHT_OFFSET,
-    LAST_HEIGHT_OFFSET
-};
-
-SensorInformation sensors_info[MAX_SENSORS];
-
-float get_sensor_value(const String &id, SensorField field)
-{
-    File file = LittleFS.open("/sensor_config.json", "r");
-    if (!file) return NAN;
-    StaticJsonDocument<4096> doc;
-    DeserializationError err = deserializeJson(doc, file);
-    file.close();
-    if (err) return NAN;
-    JsonArray arr1 = doc["sensors_two_point"];
-    JsonArray arr2 = doc["sensors_height"];
-
-    auto searchArray = [&](JsonArray arr) -> float {
-        for (JsonObject s : arr) {
-            if (s["id"].as<String>() == id) {
-
-                switch (field) {
-                    case CURRENT:
-                        return s["current"] | NAN;
-
-                    case MIN:
-                        return s["min"] | NAN;
-
-                    case MAX:
-                        return s["max"] | NAN;
-
-                    case LAST_MIN:
-                        return s["last_min"] | NAN;
-
-                    case LAST_MAX:
-                        return s["last_max"] | NAN;
-
-                    case HEIGHT_OFFSET:
-                        return s["height_offset"] | NAN;
-
-                    case LAST_HEIGHT_OFFSET:
-                        return s["last_height_offset"] | NAN;
-                }
-            }
-        }
-        return NAN;
-    };
-    float result = searchArray(arr1);
-    if (!isnan(result)) return result;
-    return searchArray(arr2);
-}
 ///_____________________________ CODE FOR THE Button FORMAT_____________________________________
-//shity code for the button on click will be changed later do do my sity codinh 
+//shity code for the button on click will be changed later do do my sity coding
 static void btn_event_cb(lv_event_t * e){
     if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
         lv_obj_t * btn = lv_event_get_target(e);
         // Get sensor name from user data
         const char * sensor_name = (const char *)lv_event_get_user_data(e);
         printf("Button clicked: %s\n", sensor_name);
-        lv_scr_load_anim(objects.calibration, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0,false);
+        lv_scr_load_anim(objects.twopoint_calibration, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0,false);
         current_sensor_edit = sensor_name;
-        refresh_data();
+        two_point_calibration_refresh();
     }
 }
 
@@ -143,13 +42,37 @@ void create_sensor_list(lv_obj_t * parent)
     }
 }
 
+static void btn_set_cail_mtx(lv_event_t * e)
+{
+    lv_obj_t * obj = lv_event_get_target(e);
+
+    const char * txt =
+        lv_btnmatrix_get_btn_text(
+            obj,
+            lv_btnmatrix_get_selected_btn(obj));
+
+    if(txt) {
+        if(strcmp(txt, "Set Min") == 0 || strcmp(txt, "set min") == 0) {
+            printf("Button pressed: Set Min");
+            fflush(stdout);
+        }
+        else if(strcmp(txt, "Set Max") == 0 || strcmp(txt, "set max") == 0) {
+            printf("Button pressed: Set Max");
+            fflush(stdout);
+        }
+        else {
+            printf("Button pressed: %s", txt);
+            fflush(stdout);
+        }
+    }
+}
 
 // ________________________________ CODE FOR THE INPUT TEXT AREA _____________________________________
 static void textarea_event_handler(lv_event_t * e)
 {
     lv_obj_t * ta = lv_event_get_target(e);
 
-    LV_LOG_USER("Enter was pressed. The current text is: %s",
+    printf("Enter was pressed. The current text is: %s",
                 lv_textarea_get_text(ta));
 }
 
@@ -168,9 +91,11 @@ static void btnm_event_handler(lv_event_t * e)
     if(strcmp(txt, LV_SYMBOL_BACKSPACE) == 0)
         lv_textarea_del_char(ta);
 
-    else if(strcmp(txt, LV_SYMBOL_NEW_LINE) == 0)
+    else if(strcmp(txt, LV_SYMBOL_NEW_LINE) == 0) {
         lv_event_send(ta, LV_EVENT_READY, NULL);
-
+        printf("Entered value: %s\n", lv_textarea_get_text(ta));
+        lv_textarea_set_text(ta, "");
+    }
     else
         lv_textarea_add_text(ta, txt);
 }
@@ -180,7 +105,7 @@ void create_numpad(lv_obj_t * parent, lv_obj_t * parent2)
 {
     lv_obj_t * ta = lv_textarea_create(parent2);
     lv_textarea_set_one_line(ta, true);
-    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 10);
+    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 20);
     lv_obj_add_event_cb(ta,
                         textarea_event_handler,
                         LV_EVENT_READY,
@@ -250,6 +175,7 @@ void information_table(lv_obj_t * parent, const std::string &sensor_name)
     lv_obj_t * table = lv_table_create(parent);
     //get sensor type and value 
     std::string current  = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT));
+    std::string avg      = fmt_float(get_sensor_value(sensor_name.c_str(), AVG));
     std::string max      = fmt_float(get_sensor_value(sensor_name.c_str(), MAX));
     std::string min      = fmt_float(get_sensor_value(sensor_name.c_str(), MIN));
     std::string last_min = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MIN));
@@ -258,18 +184,20 @@ void information_table(lv_obj_t * parent, const std::string &sensor_name)
     /*Fill the first column*/
     lv_table_set_cell_value(table, 0, 0, "Name");
     lv_table_set_cell_value(table, 1, 0, "Current");
-    lv_table_set_cell_value(table, 2, 0, "Min");
-    lv_table_set_cell_value(table, 3, 0, "Max");
-    lv_table_set_cell_value(table, 4, 0, "Last Min");
-    lv_table_set_cell_value(table, 5, 0, "Last Max");
+    lv_table_set_cell_value(table, 2, 0, "Average");
+    lv_table_set_cell_value(table, 3, 0, "Min");
+    lv_table_set_cell_value(table, 4, 0, "Max");
+    lv_table_set_cell_value(table, 5, 0, "Last Min");
+    lv_table_set_cell_value(table, 6, 0, "Last Max");
 
     /*Fill the second column*/
     lv_table_set_cell_value(table, 0, 1, "Value");
     lv_table_set_cell_value(table, 1, 1, current.c_str());
-    lv_table_set_cell_value(table, 2, 1, min.c_str());
-    lv_table_set_cell_value(table, 3, 1, max.c_str());
-    lv_table_set_cell_value(table, 4, 1, last_min.c_str());
-    lv_table_set_cell_value(table, 5, 1, last_max.c_str());
+    lv_table_set_cell_value(table, 2, 1, avg.c_str());
+    lv_table_set_cell_value(table, 3, 1, min.c_str());
+    lv_table_set_cell_value(table, 4, 1, max.c_str());
+    lv_table_set_cell_value(table, 5, 1, last_min.c_str());
+    lv_table_set_cell_value(table, 6, 1, last_max.c_str());
 
 
     /*Set a smaller height to the table. It'll make it scrollable*/
@@ -281,7 +209,7 @@ void information_table(lv_obj_t * parent, const std::string &sensor_name)
 }
 
 
-void refresh_data(){
+void two_point_calibration_refresh(){
     get_sensor_list();
     lv_obj_clean(objects.sensor_list);
     create_sensor_list(objects.sensor_list);
@@ -290,6 +218,8 @@ void refresh_data(){
 
 void setup_calibration_ui(){
     lv_obj_add_event_cb(objects.back, btn_back, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(objects.set_cali, btn_set_cail_mtx, LV_EVENT_CLICKED, NULL);
+    two_point_calibration_refresh();
 }
 
 void setup_main_ui(){
@@ -297,7 +227,7 @@ void setup_main_ui(){
     lv_obj_set_layout(objects.sensor_list, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(objects.sensor_list,
                          LV_FLEX_FLOW_COLUMN);
-    refresh_data();
     setup_calibration_ui();
+    two_point_calibration_refresh();
 }
 

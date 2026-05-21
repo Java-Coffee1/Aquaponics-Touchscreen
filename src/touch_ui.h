@@ -14,13 +14,13 @@
 #include <vector>
 #include "ui.h"
 #include <string>
-#define MAX_SENSORS 50
+#include "get_sensor_data.h"
 
 
 
 void setup_main_ui();
 void setup_ui();
-void refresh_data();
+void two_point_calibration_refresh();
 // void textarea_event_handler(lv_event_t * e);
 
 // void btnm_event_handler(lv_event_t * e);

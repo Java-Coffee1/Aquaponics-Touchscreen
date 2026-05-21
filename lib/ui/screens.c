@@ -60,9 +60,9 @@ void create_screen_main() {
 void tick_screen_main() {
 }
 
-void create_screen_calibration() {
+void create_screen_twopoint_calibration() {
     lv_obj_t *obj = lv_obj_create(0);
-    objects.calibration = obj;
+    objects.twopoint_calibration = obj;
     lv_obj_set_pos(obj, 0, 0);
     lv_obj_set_size(obj, 800, 480);
     {
@@ -71,8 +71,8 @@ void create_screen_calibration() {
             // number_area
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.number_area = obj;
-            lv_obj_set_pos(obj, 504, 147);
-            lv_obj_set_size(obj, 280, 60);
+            lv_obj_set_pos(obj, 316, 126);
+            lv_obj_set_size(obj, 443, 81);
             lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -80,6 +80,7 @@ void create_screen_calibration() {
             lv_obj_set_style_bg_opa(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_radius(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE|LV_OBJ_FLAG_SCROLL_CHAIN_HOR|LV_OBJ_FLAG_SCROLL_CHAIN_VER|LV_OBJ_FLAG_SCROLL_ELASTIC|LV_OBJ_FLAG_SCROLL_WITH_ARROW|LV_OBJ_FLAG_SNAPPABLE);
         }
         {
             // numpad
@@ -101,7 +102,7 @@ void create_screen_calibration() {
             // back
             lv_obj_t *obj = lv_btn_create(parent_obj);
             objects.back = obj;
-            lv_obj_set_pos(obj, 19, 26);
+            lv_obj_set_pos(obj, 28, 14);
             lv_obj_set_size(obj, 100, 50);
             {
                 lv_obj_t *parent_obj = obj;
@@ -115,25 +116,11 @@ void create_screen_calibration() {
             }
         }
         {
-            // change_value
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.change_value = obj;
-            lv_obj_set_pos(obj, 514, 8);
-            lv_obj_set_size(obj, 223, 279);
-            lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_pad_bottom(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_bg_opa(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_border_width(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_radius(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        {
             // info table
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.info_table = obj;
-            lv_obj_set_pos(obj, 29, 171);
-            lv_obj_set_size(obj, 275, 285);
+            lv_obj_set_pos(obj, 28, 64);
+            lv_obj_set_size(obj, 275, 396);
             lv_obj_set_style_pad_left(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_top(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_pad_right(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -143,18 +130,31 @@ void create_screen_calibration() {
             lv_obj_set_style_radius(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE|LV_OBJ_FLAG_SCROLL_CHAIN_HOR|LV_OBJ_FLAG_SCROLL_CHAIN_VER|LV_OBJ_FLAG_SCROLL_ELASTIC);
         }
+        {
+            // set_cali
+            lv_obj_t *obj = lv_btnmatrix_create(parent_obj);
+            objects.set_cali = obj;
+            lv_obj_set_pos(obj, 316, 39);
+            lv_obj_set_size(obj, 443, 74);
+            static const char *map[3] = {
+                "Set Min",
+                "Set Max",
+                NULL,
+            };
+            lv_btnmatrix_set_map(obj, map);
+        }
     }
     
-    tick_screen_calibration();
+    tick_screen_twopoint_calibration();
 }
 
-void tick_screen_calibration() {
+void tick_screen_twopoint_calibration() {
 }
 
 typedef void (*tick_screen_func_t)();
 tick_screen_func_t tick_screen_funcs[] = {
     tick_screen_main,
-    tick_screen_calibration,
+    tick_screen_twopoint_calibration,
 };
 void tick_screen(int screen_index) {
     if (screen_index >= 0 && screen_index < 2) {
@@ -255,5 +255,5 @@ void create_screens() {
     // Initialize screens
     // Create screens
     create_screen_main();
-    create_screen_calibration();
+    create_screen_twopoint_calibration();
 }

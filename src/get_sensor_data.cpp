@@ -1,48 +1,85 @@
 #include "get_sensor_data.h"
 
-struct sensor_information
+String sensors_list[MAX_SENSORS];
+int sensor_count = 0;
+
+
+void get_sensor_list() {
+    File file = LittleFS.open("/sensor_config.json", "r");
+    if (!file) return;
+
+    StaticJsonDocument<4096> doc;
+    DeserializationError err = deserializeJson(doc, file);
+    file.close();
+
+    if (err) return;
+
+    sensor_count = 0;
+
+    // -------- sensors_two_point --------
+    JsonArray arr1 = doc["sensors_two_point"];
+    for (JsonObject s : arr1) {
+        if (sensor_count < MAX_SENSORS) {
+            sensors_list[sensor_count++] = s["id"].as<String>();
+        }
+    }
+
+    // -------- sensors_height --------
+    JsonArray arr2 = doc["sensors_height"];
+    for (JsonObject s : arr2) {
+        if (sensor_count < MAX_SENSORS) {
+            sensors_list[sensor_count++] = s["id"].as<String>();
+        }
+    }
+}
+
+
+SensorInformation sensors_info[MAX_SENSORS];
+
+float get_sensor_value(const String &id, SensorField field)
 {
-    int board_id;
-    std::string sensor_name;
-    double current_value;
-    double min_value;
-    double max_value;
-    double sensor_hight;
-};
+    File file = LittleFS.open("/sensor_config.json", "r");
+    if (!file) return NAN;
+    StaticJsonDocument<4096> doc;
+    DeserializationError err = deserializeJson(doc, file);
+    file.close();
+    if (err) return NAN;
+    JsonArray arr1 = doc["sensors_two_point"];
+    JsonArray arr2 = doc["sensors_height"];
 
-sensor_information ph_sensor;
+    auto searchArray = [&](JsonArray arr) -> float {
+        for (JsonObject s : arr) {
+            if (s["id"].as<String>() == id) {
 
-void get_sensor_data() {
+                switch (field) {
+                    case CURRENT:
+                        return s["current"] | NAN;
+                    case AVG:
+                        return s["avg"] | NAN;
 
-    // convert the strut to a 2d array for easier access in the UI more.
-    // this is passed java so have fun coding it futrure me looking over my shity ass code :)
+                    case MIN:
+                        return s["min"] | NAN;
 
-    std::string sensor_data[4][4] = {
-        // sensor_name, current_value, min_value, max_value
-        {"pH Sensor", "7.2", "0.0", "14.0"},
-        {"Temperature Sensor", "25.5", "-40.0", "125.0"},
-        {"water level sensor", "50.0", "0.0", "100.0"},
-        {"water level sensor 1", "50.0", "0.0", "100.0"}
+                    case MAX:
+                        return s["max"] | NAN;
+
+                    case LAST_MIN:
+                        return s["last_min"] | NAN;
+
+                    case LAST_MAX:
+                        return s["last_max"] | NAN;
+
+                    case HEIGHT_OFFSET:
+                        return s["height_offset"] | NAN;
+
+                    case LAST_HEIGHT_OFFSET:
+                        return s["last_height_offset"] | NAN;
+                }
+            }
+        }
+        return NAN;
     };
-    
-    // ph_sensor = {
-    //     .board_id = 1,
-    //     .sensor_name = "pH Sensor",
-    //     .current_value = 7.2,
-    //     .min_value = 0.0,
-    //     .max_value = 14.0,
-    //     .sensor_hight = -12345678
-    // };  
-
-    // if (ph_sensor.sensor_hight == -12345678) {
-
-    //     // Access values directly
-    //     std::string sensor_name = ph_sensor.sensor_name;
-    //     double current_value = ph_sensor.current_value;
-    //     double min_value = ph_sensor.min_value;
-    //     double max_value = ph_sensor.max_value;
-
-    //     // Example debug
-    //     printf("Sensor: %s\n", sensor_name.c_str());
-    // }
+    float result = searchArray(arr1);
+    if (!isnan(result)) return result;
+    return searchArray(arr2);
 }
