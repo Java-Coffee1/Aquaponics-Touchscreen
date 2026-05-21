@@ -18,6 +18,9 @@
 const char* ssid = "AquaponicsIOT";
 const char* password = "aquadma134!";
 
+unsigned long previousMillis = 0;
+unsigned long interval = 3000; // 30 seconds
+
 
 void wifi_init(){
     WiFi.mode(WIFI_AP_STA);
@@ -74,7 +77,7 @@ void setup() {
 
     if (lvgl_port_lock(-1)) {
         ui_init();
-        setup_ui();
+        setup_main_ui();
         lvgl_port_unlock();
     }
     // wifi_init();

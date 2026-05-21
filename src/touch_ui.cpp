@@ -1,6 +1,7 @@
 #include "touch_ui.h"
 #include "screens.h"
 
+    std::string current_sensor_edit = "null";
 
 static String sensors_list[MAX_SENSORS];
 static int sensor_count = 0;
@@ -33,49 +34,80 @@ void get_sensor_list() {
         }
     }
 }
-///_____________________________ CODE FOR THE BUTTONS FORMAT_____________________________________
+
+
+struct SensorInformation {
+    String id;
+    String type;
+
+    float current;
+    float min;
+    float max;
+    float height_offset;
+    float last_height_offset;
+};
+
+enum SensorField {
+    CURRENT,
+    MIN,
+    MAX,
+    HEIGHT_OFFSET,
+    LAST_HEIGHT_OFFSET
+};
+
+SensorInformation sensors_info[MAX_SENSORS];
+
+float get_sensor_value(const String &id, SensorField field)
+{
+    for (int i = 0; i < sensor_count; i++) {
+
+        if (sensors_info[i].id == id) {
+
+            switch (field) {
+                case CURRENT: return sensors_info[i].current;
+                case MIN: return sensors_info[i].min;
+                case MAX: return sensors_info[i].max;
+                case HEIGHT_OFFSET: return sensors_info[i].height_offset;
+                case LAST_HEIGHT_OFFSET: return sensors_info[i].last_height_offset;
+            }
+        }
+    }
+    return NAN;
+}
+///_____________________________ CODE FOR THE Button FORMAT_____________________________________
 //shity code for the button on click will be changed later do do my sity codinh 
 static void btn_event_cb(lv_event_t * e){
     if(lv_event_get_code(e) == LV_EVENT_CLICKED) {
         lv_obj_t * btn = lv_event_get_target(e);
         // Get sensor name from user data
-        const char * sensor_name =
-            (const char *)lv_event_get_user_data(e);
+        const char * sensor_name = (const char *)lv_event_get_user_data(e);
         printf("Button clicked: %s\n", sensor_name);
+        lv_scr_load_anim(objects.calibration, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0,false);
+        current_sensor_edit = sensor_name;
+        refresh_data();
     }
 }
-// one of my examle funtions to make this thing work
-// void create_sensor_list(lv_obj_t * parent, std::string sensor_name){
-//     lv_obj_t * sensor_name_btn = lv_btn_create(parent);
-//     lv_obj_set_size(sensor_name_btn, 120, 50);                          /*Set its size*/
-//     lv_obj_add_event_cb(sensor_name_btn, btn_event_cb, LV_EVENT_ALL, NULL);           /*Assign a callback to the button*/
 
-//     lv_obj_t * label = lv_label_create(sensor_name_btn);          /*Add a label to the button*/
-//     lv_label_set_text(label, sensor_name.c_str());                     /*Set the labels text*/
-//     lv_obj_center(label);
-//     lv_obj_set_user_data(sensor_name_btn, label);
-//                           /*Store label handle for later retrieval*/
-// }
+//back button to the screen
+static void btn_back(lv_event_t * e){
+    if(lv_event_get_code(e) == LV_EVENT_CLICKED){
+        lv_scr_load_anim(objects.main, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0,false);
+    }
+}
+
 
 // Create sensor buttons
 void create_sensor_list(lv_obj_t * parent)
 {
     for (int i = 0; i < sensor_count; i++) {
-
         lv_obj_t * item = lv_btn_create(parent);
-
         lv_obj_set_width(item, lv_pct(100));
         lv_obj_set_height(item, 40);
-
         lv_obj_set_style_pad_all(item, 5, 0);
-
         lv_obj_t * label = lv_label_create(item);
-
         lv_label_set_text(label, sensors_list[i].c_str());
         lv_obj_center(label);
-
-        lv_obj_add_event_cb(item, btn_event_cb, LV_EVENT_CLICKED,
-                            (void*)sensors_list[i].c_str());
+        lv_obj_add_event_cb(item, btn_event_cb, LV_EVENT_CLICKED, (void*)sensors_list[i].c_str());
     }
 }
 
@@ -110,7 +142,7 @@ static void btnm_event_handler(lv_event_t * e)
     else
         lv_textarea_add_text(ta, txt);
 }
-// ____________________ Create The Thing _______________________
+// ____________________ Create The Numpad _______________________
 
 void create_numpad(lv_obj_t * parent, lv_obj_t * parent2)
 {
@@ -144,36 +176,87 @@ void create_numpad(lv_obj_t * parent, lv_obj_t * parent2)
     lv_btnmatrix_set_map(btnm, btnm_map);
 }
 
+// ________________________ Create the info Table ____________________________
 
+static void table_style(lv_event_t * e)
+{
+    lv_obj_t * obj = lv_event_get_target(e);
+    lv_obj_draw_part_dsc_t * dsc = lv_event_get_draw_part_dsc(e);
+    /*If the cells are drawn...*/
+    if(dsc->part == LV_PART_ITEMS) {
+        uint32_t row = dsc->id /  lv_table_get_col_cnt(obj);
+        uint32_t col = dsc->id - row * lv_table_get_col_cnt(obj);
+
+        /*Make the texts in the first cell center aligned*/
+        if(row == 0) {
+            dsc->label_dsc->align = LV_TEXT_ALIGN_CENTER;
+            dsc->rect_dsc->bg_color = lv_color_mix(lv_palette_main(LV_PALETTE_BLUE), dsc->rect_dsc->bg_color, LV_OPA_20);
+            dsc->rect_dsc->bg_opa = LV_OPA_COVER;
+        }
+        /*In the first column align the texts to the right*/
+        else if(col == 0) {
+            dsc->label_dsc->align = LV_TEXT_ALIGN_RIGHT;
+        }
+
+        /*MAke every 2nd row grayish*/
+        if((row != 0 && row % 2) == 0) {
+            dsc->rect_dsc->bg_color = lv_color_mix(lv_palette_main(LV_PALETTE_GREY), dsc->rect_dsc->bg_color, LV_OPA_10);
+            dsc->rect_dsc->bg_opa = LV_OPA_COVER;
+        }
+    }
+}
+
+void information_table(lv_obj_t * parent, const std::string &sensor_name)
+{
+    lv_obj_t * table = lv_table_create(parent);
+    //get sensor type and value 
+    std::string current = std::to_string(get_sensor_value(sensor_name.c_str(), CURRENT));
+    /*Fill the first column*/
+    lv_table_set_cell_value(table, 0, 0, "Name");
+    lv_table_set_cell_value(table, 1, 0, "Current");
+    lv_table_set_cell_value(table, 2, 0, "Banana");
+    lv_table_set_cell_value(table, 3, 0, "Lemon");
+    lv_table_set_cell_value(table, 4, 0, "Grape");
+    lv_table_set_cell_value(table, 5, 0, "Melon");
+    lv_table_set_cell_value(table, 6, 0, "Peach");
+    lv_table_set_cell_value(table, 7, 0, "Nuts");
+
+    /*Fill the second column*/
+    lv_table_set_cell_value(table, 0, 1, "Value");
+    lv_table_set_cell_value(table, 1, 1, current.c_str());
+    lv_table_set_cell_value(table, 2, 1, "$4");
+    lv_table_set_cell_value(table, 3, 1, "$6");
+    lv_table_set_cell_value(table, 4, 1, "$2");
+    lv_table_set_cell_value(table, 5, 1, "$5");
+    lv_table_set_cell_value(table, 6, 1, "$1");
+    lv_table_set_cell_value(table, 7, 1, "$9");
+
+    /*Set a smaller height to the table. It'll make it scrollable*/
+    lv_obj_set_height(table, 200);
+    lv_obj_center(table);
+
+    /*Add an event callback to to apply some custom drawing*/
+    lv_obj_add_event_cb(table, table_style, LV_EVENT_DRAW_PART_BEGIN, NULL);
+}
 
 
 void refresh_data(){
-
-    Serial.println("STEP 1: refresh_data called");
-
     get_sensor_list();
-
-    Serial.println("STEP 2: after JSON load");
-
-    Serial.print("sensor_count = ");
-    Serial.println(sensor_count);
-
     lv_obj_clean(objects.sensor_list);
-
-    Serial.println("STEP 3: creating buttons");
-
     create_sensor_list(objects.sensor_list);
-
-    Serial.println("STEP 4: done");
+    information_table(objects.info_table, current_sensor_edit);
 }
 
-void setup_ui()
-{
+void setup_calibration_ui(){
+    lv_obj_add_event_cb(objects.back, btn_back, LV_EVENT_CLICKED, NULL);
+}
+
+void setup_main_ui(){
     create_numpad(objects.numpad, objects.number_area);
     lv_obj_set_layout(objects.sensor_list, LV_LAYOUT_FLEX);
     lv_obj_set_flex_flow(objects.sensor_list,
                          LV_FLEX_FLOW_COLUMN);
-
     refresh_data();
+    setup_calibration_ui();
 }
 

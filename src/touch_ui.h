@@ -12,11 +12,15 @@
 #include "LittleFS.h"
 #include <ArduinoJson.h>
 #include <vector>
-
+#include "ui.h"
+#include <string>
 #define MAX_SENSORS 50
 
+
+
+void setup_main_ui();
 void setup_ui();
-void setup_ui();
+void refresh_data();
 // void textarea_event_handler(lv_event_t * e);
 
 // void btnm_event_handler(lv_event_t * e);
