@@ -274,7 +274,6 @@ void information_table(lv_obj_t * parent, const std::string &sensor_name)
     /*Set a smaller height to the table. It'll make it scrollable*/
     lv_obj_set_height(table, 350);
     lv_obj_center(table);
-
     /*Add an event callback to to apply some custom drawing*/
     lv_obj_add_event_cb(table, table_style, LV_EVENT_DRAW_PART_BEGIN, NULL);
 }
@@ -285,9 +284,6 @@ void sensor_hight_calibration_refresh() {
 
 void setup_hight_calibration_ui() {
     create_numpad(objects.numpad_hight, objects.number_area_hight);
-    lv_obj_set_layout(objects.sensor_list, LV_LAYOUT_FLEX);
-    lv_obj_set_flex_flow(objects.sensor_list,
-                         LV_FLEX_FLOW_COLUMN);
     lv_obj_add_event_cb(objects.back_btn_hight, btn_back, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(objects.set_new_hight_offset, btn_set_hight_offset, LV_EVENT_CLICKED, NULL);
     sensor_hight_calibration_refresh();
@@ -314,7 +310,6 @@ void refresh_main_ui() {
     create_sensor_list(objects.sensor_list);
 }
 void setup_main_ui(){
-
     refresh_main_ui();
     setup_calibration_ui();
     two_point_calibration_refresh();

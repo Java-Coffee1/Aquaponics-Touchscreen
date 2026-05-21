@@ -22,6 +22,7 @@ typedef struct _objects_t {
     lv_obj_t *twopoint_calibration;
     lv_obj_t *sensor_hight;
     lv_obj_t *sensor_list;
+    lv_obj_t *current_sensors;
     lv_obj_t *number_area;
     lv_obj_t *numpad;
     lv_obj_t *back;
