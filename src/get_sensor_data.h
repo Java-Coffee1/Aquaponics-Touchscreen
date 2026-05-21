@@ -14,7 +14,9 @@
 // ---------------- Sensor Field Enum ----------------
 enum SensorField {
     CURRENT,
-    AVG,
+    SENSOR_TYPE,
+    CURRENT_VOL,
+    AVG_VOL,
     MIN,
     MAX,
     LAST_MIN,
@@ -29,7 +31,9 @@ struct SensorInformation {
     String type;
 
     float current;
-    float avg;
+    float sensor_type;
+    float currnt_vol;
+    float avg_vol;
     float min;
     float max;
     float last_min;

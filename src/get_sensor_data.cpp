@@ -3,7 +3,6 @@
 String sensors_list[MAX_SENSORS];
 int sensor_count = 0;
 
-
 void get_sensor_list() {
     File file = LittleFS.open("/sensor_config.json", "r");
     if (!file) return;
@@ -54,8 +53,13 @@ float get_sensor_value(const String &id, SensorField field)
                 switch (field) {
                     case CURRENT:
                         return s["current"] | NAN;
-                    case AVG:
-                        return s["avg"] | NAN;
+                    case SENSOR_TYPE:
+                        return s["sensor_type"] | NAN;
+                    
+                    case CURRENT_VOL:
+                        return s["currnt_vol"] | NAN;
+                    case AVG_VOL:
+                        return s["avg_vol"] | NAN;
 
                     case MIN:
                         return s["min"] | NAN;
@@ -103,8 +107,11 @@ void write_sensor_value(const String &id, SensorField field, float value)
                     case CURRENT:
                         s["current"] = value;
                         break;
-                    case AVG:
-                        s["avg"] = value;
+                    case CURRENT_VOL:
+                        s["currnt_vol"] = value;
+                        break;
+                    case AVG_VOL:
+                        s["avg_vol"] = value;
                         break;
 
                     case MIN:

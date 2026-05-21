@@ -7,6 +7,11 @@ int current_calibration_step = 0;
 // 0 - not selected
 // 1 - setting min
 // 2 - setting max
+// 3 - setting height offset
+int current_calibration_type = 0;
+// 0 - not selected
+// 1 - two point calibration
+// 2 - height calibration
 
 
 
@@ -17,10 +22,22 @@ static void btn_event_cb(lv_event_t * e){
         lv_obj_t * btn = lv_event_get_target(e);
         // Get sensor name from user data
         const char * sensor_name = (const char *)lv_event_get_user_data(e);
-        printf("Button clicked: %s\n", sensor_name);
-        lv_scr_load_anim(objects.twopoint_calibration, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0,false);
         current_sensor_edit = sensor_name;
-        two_point_calibration_refresh();
+        float sensor_type = get_sensor_value(sensor_name, SENSOR_TYPE);
+        if (sensor_type == 1.0f) { // sensors_two_point
+            current_calibration_type = 1;
+            printf("Button clicked: %s\n", sensor_name);
+            lv_scr_load_anim(objects.twopoint_calibration, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0,false);
+            two_point_calibration_refresh();
+        }
+        else if (sensor_type == 2.0f) { // sensors_height
+            current_calibration_type = 2;
+            printf("Button clicked: %s\n", sensor_name);
+            lv_scr_load_anim(objects.sensor_hight, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0,false);
+            sensor_hight_calibration_refresh();
+        }
+
+
     }
 }
 
@@ -70,6 +87,12 @@ static void btn_set_cail_mtx(lv_event_t * e)
     }
 }
 
+static void btn_set_hight_offset(lv_event_t * e){
+    if(lv_event_get_code(e) == LV_EVENT_CLICKED){
+        current_calibration_step = 3;
+    }
+}
+
 // ________________________________ CODE FOR THE INPUT TEXT AREA _____________________________________
 static void textarea_event_handler(lv_event_t * e)
 {
@@ -98,14 +121,25 @@ static void btnm_event_handler(lv_event_t * e)
         lv_event_send(ta, LV_EVENT_READY, NULL);
         printf("Entered value: %s\n", lv_textarea_get_text(ta));
         if (current_calibration_step == 1) {
+            float last = get_sensor_value(current_sensor_edit.c_str(), MIN);
+            write_sensor_value(current_sensor_edit.c_str(), LAST_MIN, last);
             write_sensor_value(current_sensor_edit.c_str(), MIN, atof(lv_textarea_get_text(ta)));
             current_calibration_step = 0;
             two_point_calibration_refresh();
         }
         else if (current_calibration_step == 2) {
+            float last = get_sensor_value(current_sensor_edit.c_str(), MIN);
+            write_sensor_value(current_sensor_edit.c_str(), LAST_MIN, last);
             write_sensor_value(current_sensor_edit.c_str(), MAX, atof(lv_textarea_get_text(ta)));
             current_calibration_step = 0;
             two_point_calibration_refresh();
+        }
+        else if (current_calibration_step == 3) {
+            float last = get_sensor_value(current_sensor_edit.c_str(), MIN);
+            write_sensor_value(current_sensor_edit.c_str(), LAST_MIN, last);
+            write_sensor_value(current_sensor_edit.c_str(), HEIGHT_OFFSET, atof(lv_textarea_get_text(ta)));
+            current_calibration_step = 0;
+            sensor_hight_calibration_refresh();
         }
         lv_textarea_set_text(ta, "");
 
@@ -119,7 +153,7 @@ void create_numpad(lv_obj_t * parent, lv_obj_t * parent2)
 {
     lv_obj_t * ta = lv_textarea_create(parent2);
     lv_textarea_set_one_line(ta, true);
-    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 20);
+    lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 30);
     lv_obj_add_event_cb(ta,
                         textarea_event_handler,
                         LV_EVENT_READY,
@@ -188,60 +222,103 @@ void information_table(lv_obj_t * parent, const std::string &sensor_name)
 {
     lv_obj_t * table = lv_table_create(parent);
     //get sensor type and value 
-    std::string current  = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT));
-    std::string avg      = fmt_float(get_sensor_value(sensor_name.c_str(), AVG));
-    std::string max      = fmt_float(get_sensor_value(sensor_name.c_str(), MAX));
-    std::string min      = fmt_float(get_sensor_value(sensor_name.c_str(), MIN));
-    std::string last_min = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MIN));
-    std::string last_max = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MAX));
+    if (current_calibration_type == 1) {
+        std::string current  = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT));
+        std::string current_vol = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT_VOL));
+        std::string avg      = fmt_float(get_sensor_value(sensor_name.c_str(), AVG_VOL));
+        std::string max      = fmt_float(get_sensor_value(sensor_name.c_str(), MAX));
+        std::string min      = fmt_float(get_sensor_value(sensor_name.c_str(), MIN));
+        std::string last_min = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MIN));
+        std::string last_max = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MAX));
 
-    /*Fill the first column*/
-    lv_table_set_cell_value(table, 0, 0, "Name");
-    lv_table_set_cell_value(table, 1, 0, "Current");
-    lv_table_set_cell_value(table, 2, 0, "Average");
-    lv_table_set_cell_value(table, 3, 0, "Min");
-    lv_table_set_cell_value(table, 4, 0, "Max");
-    lv_table_set_cell_value(table, 5, 0, "Last Min");
-    lv_table_set_cell_value(table, 6, 0, "Last Max");
+        /*Fill the first column*/
+        lv_table_set_cell_value(table, 0, 0, sensor_name.c_str());
+        lv_table_set_cell_value(table, 1, 0, "Current pH");
+        lv_table_set_cell_value(table, 2, 0, "Current Voltage");
+        lv_table_set_cell_value(table, 3, 0, "Average");
+        lv_table_set_cell_value(table, 4, 0, "Min");
+        lv_table_set_cell_value(table, 5, 0, "Max");
+        lv_table_set_cell_value(table, 6, 0, "Last Min");
+        lv_table_set_cell_value(table, 7, 0, "Last Max");
 
-    /*Fill the second column*/
-    lv_table_set_cell_value(table, 0, 1, "Value");
-    lv_table_set_cell_value(table, 1, 1, current.c_str());
-    lv_table_set_cell_value(table, 2, 1, avg.c_str());
-    lv_table_set_cell_value(table, 3, 1, min.c_str());
-    lv_table_set_cell_value(table, 4, 1, max.c_str());
-    lv_table_set_cell_value(table, 5, 1, last_min.c_str());
-    lv_table_set_cell_value(table, 6, 1, last_max.c_str());
+        /*Fill the second column*/
+        lv_table_set_cell_value(table, 0, 1, "Value");
+        lv_table_set_cell_value(table, 1, 1, current.c_str());
+        lv_table_set_cell_value(table, 2, 1, current_vol.c_str());
+        lv_table_set_cell_value(table, 3, 1, avg.c_str());
+        lv_table_set_cell_value(table, 4, 1, min.c_str());
+        lv_table_set_cell_value(table, 5, 1, max.c_str());
+        lv_table_set_cell_value(table, 6, 1, last_min.c_str());
+        lv_table_set_cell_value(table, 7, 1, last_max.c_str());
+
+    }
+    else if (current_calibration_type == 2) {
+        std::string current  = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT));
+        std::string height_offset = fmt_float(get_sensor_value(sensor_name.c_str(), HEIGHT_OFFSET));
+        std::string last_height_offset = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_HEIGHT_OFFSET));
+
+        /*Fill the first column*/
+        lv_table_set_cell_value(table, 0, 0, sensor_name.c_str());
+        lv_table_set_cell_value(table, 1, 0, "Current Height");
+        lv_table_set_cell_value(table, 2, 0, "Height Offset");
+        lv_table_set_cell_value(table, 3, 0, "Last Height Offset");
+
+        /*Fill the second column*/
+        lv_table_set_cell_value(table, 0, 1, "Value");
+        lv_table_set_cell_value(table, 1, 1, current.c_str());
+        lv_table_set_cell_value(table, 2, 1, height_offset.c_str());
+        lv_table_set_cell_value(table, 3, 1, last_height_offset.c_str());
+    }
 
 
     /*Set a smaller height to the table. It'll make it scrollable*/
-    lv_obj_set_height(table, 400);
+    lv_obj_set_height(table, 350);
     lv_obj_center(table);
 
     /*Add an event callback to to apply some custom drawing*/
     lv_obj_add_event_cb(table, table_style, LV_EVENT_DRAW_PART_BEGIN, NULL);
 }
 
+void sensor_hight_calibration_refresh() {
+    information_table(objects.info_table_hight, current_sensor_edit);
+}
+
+void setup_hight_calibration_ui() {
+    create_numpad(objects.numpad_hight, objects.number_area_hight);
+    lv_obj_set_layout(objects.sensor_list, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(objects.sensor_list,
+                         LV_FLEX_FLOW_COLUMN);
+    lv_obj_add_event_cb(objects.back_btn_hight, btn_back, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(objects.set_new_hight_offset, btn_set_hight_offset, LV_EVENT_CLICKED, NULL);
+    sensor_hight_calibration_refresh();
+}
 
 void two_point_calibration_refresh(){
-    get_sensor_list();
-    lv_obj_clean(objects.sensor_list);
-    create_sensor_list(objects.sensor_list);
     information_table(objects.info_table, current_sensor_edit);
 }
 
 void setup_calibration_ui(){
+    create_numpad(objects.numpad, objects.number_area);
+    lv_obj_set_layout(objects.sensor_list, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(objects.sensor_list,
+                         LV_FLEX_FLOW_COLUMN);
     lv_obj_add_event_cb(objects.back, btn_back, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(objects.set_cali, btn_set_cail_mtx, LV_EVENT_CLICKED, NULL);
     two_point_calibration_refresh();
 }
 
+
+void refresh_main_ui() {
+    get_sensor_list();
+    lv_obj_clean(objects.sensor_list);
+    create_sensor_list(objects.sensor_list);
+}
 void setup_main_ui(){
-    create_numpad(objects.numpad, objects.number_area);
-    lv_obj_set_layout(objects.sensor_list, LV_LAYOUT_FLEX);
-    lv_obj_set_flex_flow(objects.sensor_list,
-                         LV_FLEX_FLOW_COLUMN);
+
+    refresh_main_ui();
     setup_calibration_ui();
     two_point_calibration_refresh();
+    setup_hight_calibration_ui();
+    sensor_hight_calibration_refresh();
 }
 
