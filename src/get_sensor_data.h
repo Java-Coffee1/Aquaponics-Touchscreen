@@ -48,3 +48,4 @@ extern SensorInformation sensors_info[MAX_SENSORS];
 // ---------------- Function Prototypes ----------------
 void get_sensor_list();
 float get_sensor_value(const String &id, SensorField field);
+void write_sensor_value(const String &id, SensorField field, float value);

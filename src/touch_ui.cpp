@@ -3,6 +3,11 @@
 
 std::string current_sensor_edit = "null";
 
+int current_calibration_step = 0;
+// 0 - not selected
+// 1 - setting min
+// 2 - setting max
+
 
 
 ///_____________________________ CODE FOR THE Button FORMAT_____________________________________
@@ -53,12 +58,10 @@ static void btn_set_cail_mtx(lv_event_t * e)
 
     if(txt) {
         if(strcmp(txt, "Set Min") == 0 || strcmp(txt, "set min") == 0) {
-            printf("Button pressed: Set Min");
-            fflush(stdout);
+            current_calibration_step = 1;
         }
         else if(strcmp(txt, "Set Max") == 0 || strcmp(txt, "set max") == 0) {
-            printf("Button pressed: Set Max");
-            fflush(stdout);
+            current_calibration_step = 2;
         }
         else {
             printf("Button pressed: %s", txt);
@@ -94,7 +97,18 @@ static void btnm_event_handler(lv_event_t * e)
     else if(strcmp(txt, LV_SYMBOL_NEW_LINE) == 0) {
         lv_event_send(ta, LV_EVENT_READY, NULL);
         printf("Entered value: %s\n", lv_textarea_get_text(ta));
+        if (current_calibration_step == 1) {
+            write_sensor_value(current_sensor_edit.c_str(), MIN, atof(lv_textarea_get_text(ta)));
+            current_calibration_step = 0;
+            two_point_calibration_refresh();
+        }
+        else if (current_calibration_step == 2) {
+            write_sensor_value(current_sensor_edit.c_str(), MAX, atof(lv_textarea_get_text(ta)));
+            current_calibration_step = 0;
+            two_point_calibration_refresh();
+        }
         lv_textarea_set_text(ta, "");
+
     }
     else
         lv_textarea_add_text(ta, txt);
