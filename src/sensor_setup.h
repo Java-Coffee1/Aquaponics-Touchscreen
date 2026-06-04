@@ -12,19 +12,18 @@
 
 enum SensorField : uint8_t
 {
-    CURRENT = 0,
-    SENSOR_TYPE = 1,
-    CURRENT_VOL = 2,
-    AVG_VOL = 3,
-    MIN = 4,
-    MAX = 5,
-    LAST_MIN = 6,
-    LAST_MAX = 7,
-    HEIGHT_OFFSET = 8,
-    LAST_HEIGHT_OFFSET = 9,
-    UNKNOWN = 255
+    CURRENT,
+    SENSOR_TYPE,
+    CURRENT_VOL,
+    AVG_VOL,
+    MIN,
+    MAX,
+    LAST_MIN,
+    LAST_MAX,
+    HEIGHT_OFFSET,
+    LAST_HEIGHT_OFFSET,
+    SENSOR_FIELD_MAX
 };
-
 // ---------------- Sensor Data Struct ----------------
 struct SensorInformation
 {
