@@ -25,13 +25,7 @@ unsigned long interval = 30000; // 30 seconds
 //_______________________________ ESP NOW SETUP ________________________________
 esp_now_peer_info_t slave;
 int chan;
-
-enum MessageType
-{
-    PAIRING,
-    DATA,
-};
-MessageType messageType;
+uint8_t clientMacAddress[6];
 
 // void update_sensor_list() {
 //     get_sensor_data((std::string name, double current, double min, double max) {
@@ -77,13 +71,31 @@ void setup()
         setup_main_ui();
         lvgl_port_unlock();
     }
+
     WiFi.mode(WIFI_STA);
-    if (esp_now_init() != ESP_OK)
+    WiFi.STA.begin();
+    Serial.print("Server MAC Address: ");
+
+    // Set the device as a Station and Soft Access Point simultaneously
+    WiFi.mode(WIFI_AP_STA);
+    // Set device as a Wi-Fi Station
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED)
     {
-        Serial.println("ESP-NOW init failed");
-        return;
+        delay(1000);
+        Serial.println("Setting as a Wi-Fi Station..");
     }
 
+    Serial.print("Server SOFT AP MAC Address:  ");
+    Serial.println(WiFi.softAPmacAddress());
+
+    chan = WiFi.channel();
+    Serial.print("Station IP Address: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("Wi-Fi Channel: ");
+    Serial.println(WiFi.channel());
+
+    initESP_NOW();
     // esp_task_wdt_init(&wdt_config);
     // esp_task_wdt_add(xTaskGetCurrentTaskHandle());
 }
