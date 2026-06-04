@@ -48,21 +48,19 @@ void setup()
         Serial.println("Failed to open file for reading");
         return;
     }
-
     Serial.println("File Content:");
     while (file.available())
     {
         Serial.write(file.read());
     }
     file.close();
+
     static esp_lcd_panel_handle_t panel_handle = NULL;
     static esp_lcd_touch_handle_t tp_handle = NULL;
-
     tp_handle = touch_gt911_init();
     panel_handle = waveshare_esp32_s3_rgb_lcd_init();
     wavesahre_rgb_lcd_bl_on();
     ESP_ERROR_CHECK(lvgl_port_init(panel_handle, tp_handle));
-
     ESP_LOGI(TAG, "Display LVGL demos");
 
     if (lvgl_port_lock(-1))
@@ -72,28 +70,31 @@ void setup()
         lvgl_port_unlock();
     }
 
-    WiFi.mode(WIFI_STA);
-    WiFi.STA.begin();
-    Serial.print("Server MAC Address: ");
-
-    // Set the device as a Station and Soft Access Point simultaneously
+    // ── WiFi + ESP-NOW ────────────────────────────────────────
     WiFi.mode(WIFI_AP_STA);
-    // Set device as a Wi-Fi Station
+    WiFi.softAP("AquaServer", nullptr, 1, 1); // start AP interface early (hidden)
     WiFi.begin(ssid, password);
+
+    Serial.print("Server MAC Address: ");
+    Serial.println(WiFi.macAddress());
+
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(1000);
         Serial.println("Setting as a Wi-Fi Station..");
     }
 
+    // Lock AP to the same channel as the router
+    chan = WiFi.channel();
+    WiFi.softAPdisconnect(false);
+    WiFi.softAP("AquaServer", nullptr, chan, 1); // hidden, matched channel
+
     Serial.print("Server SOFT AP MAC Address:  ");
     Serial.println(WiFi.softAPmacAddress());
-
-    chan = WiFi.channel();
     Serial.print("Station IP Address: ");
     Serial.println(WiFi.localIP());
     Serial.print("Wi-Fi Channel: ");
-    Serial.println(WiFi.channel());
+    Serial.println(chan);
 
     initESP_NOW();
     // esp_task_wdt_init(&wdt_config);
