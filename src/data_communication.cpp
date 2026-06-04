@@ -135,7 +135,14 @@ void initESP_NOW()
         Serial.println("Error initializing ESP-NOW");
         return;
     }
-    // Remove the esp_now_send_cb_t(...) and esp_now_recv_cb_t(...) casts:
-    esp_now_register_send_cb(OnDataSent);
-    esp_now_register_recv_cb(OnDataRecv);
+    esp_now_register_send_cb(esp_now_send_cb_t(OnDataSent));
+    esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+
+    // Add broadcast address so we can receive pairing requests from any channel
+    uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    memset(&slave, 0, sizeof(slave));
+    memcpy(slave.peer_addr, broadcastAddress, 6);
+    slave.channel = 0; // 0 = current channel
+    slave.encrypt = false;
+    esp_now_add_peer(&slave);
 }

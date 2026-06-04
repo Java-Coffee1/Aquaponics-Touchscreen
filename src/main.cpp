@@ -16,9 +16,6 @@
 #include "data_communication.h"
 // #include "screens.h"
 
-const char *ssid = "AquaponicsIOT";
-const char *password = "aquadma134!";
-
 unsigned long previousMillis = 0;
 unsigned long interval = 30000; // 30 seconds
 
@@ -70,35 +67,17 @@ void setup()
         lvgl_port_unlock();
     }
 
-    // ── WiFi + ESP-NOW ────────────────────────────────────────
-    WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP("AquaServer", nullptr, 1, 1); // start AP interface early (hidden)
-    WiFi.begin(ssid, password);
+    // ── ESP-NOW (no internet needed) ──────────────────────────
+    WiFi.mode(WIFI_AP_STA);                   // AP only, no STA/router needed
+    WiFi.softAP("AquaServer", nullptr, 6, 1); // channel 6, hidden
+    chan = 6;
 
-    Serial.print("Server MAC Address: ");
-    Serial.println(WiFi.macAddress());
-
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(1000);
-        Serial.println("Setting as a Wi-Fi Station..");
-    }
-
-    // Lock AP to the same channel as the router
-    chan = WiFi.channel();
-    WiFi.softAPdisconnect(false);
-    WiFi.softAP("AquaServer", nullptr, chan, 1); // hidden, matched channel
-
-    Serial.print("Server SOFT AP MAC Address:  ");
+    Serial.print("Server SOFT AP MAC Address: ");
     Serial.println(WiFi.softAPmacAddress());
-    Serial.print("Station IP Address: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("Wi-Fi Channel: ");
+    Serial.print("Channel: ");
     Serial.println(chan);
 
     initESP_NOW();
-    // esp_task_wdt_init(&wdt_config);
-    // esp_task_wdt_add(xTaskGetCurrentTaskHandle());
 }
 void loop()
 {
