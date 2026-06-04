@@ -6,41 +6,7 @@
 #include <ArduinoJson.h>
 #include <vector>
 #include "ui.h"
-#include <string>
-
-#define MAX_SENSORS 50
-
-
-// ---------------- Sensor Field Enum ----------------
-enum SensorField {
-    CURRENT,
-    SENSOR_TYPE,
-    CURRENT_VOL,
-    AVG_VOL,
-    MIN,
-    MAX,
-    LAST_MIN,
-    LAST_MAX,
-    HEIGHT_OFFSET,
-    LAST_HEIGHT_OFFSET
-};
-
-// ---------------- Sensor Data Struct ----------------
-struct SensorInformation {
-    String id;
-    String type;
-
-    float current;
-    float sensor_type;
-    float currnt_vol;
-    float avg_vol;
-    float min;
-    float max;
-    float last_min;
-    float last_max;
-    float height_offset;
-    float last_height_offset;
-};
+#include "sensor_setup.h"
 
 // ---------------- External Globals ----------------
 // (defined in .cpp)
@@ -53,3 +19,5 @@ extern SensorInformation sensors_info[MAX_SENSORS];
 void get_sensor_list();
 float get_sensor_value(const String &id, SensorField field);
 void write_sensor_value(const String &id, SensorField field, float value);
+
+std::string fmt_float(float v, int precision = 2);
