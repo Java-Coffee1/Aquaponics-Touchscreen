@@ -13,16 +13,16 @@
 #include "get_sensor_data.h"
 #include "LittleFS.h"
 #include "sensor_setup.h"
-#include "data_communication.h"
+#include "data_coms/data_communication.h"
 // #include "screens.h"
 
 unsigned long previousMillis = 0;
 unsigned long interval = 30000; // 30 seconds
 
 //_______________________________ ESP NOW SETUP ________________________________
-esp_now_peer_info_t slave;
-int chan;
-uint8_t clientMacAddress[6];
+// resiver of the data
+uint8_t serverAddress[] = {0x88, 0x13, 0xBF, 0x82, 0x39, 0x30};
+esp_now_peer_info_t peerInfo;
 
 // void update_sensor_list() {
 //     get_sensor_data((std::string name, double current, double min, double max) {
@@ -68,19 +68,38 @@ void setup()
     }
 
     // ── ESP-NOW (no internet needed) ──────────────────────────
-    WiFi.mode(WIFI_AP_STA);                   // AP only, no STA/router needed
-    WiFi.softAP("AquaServer", nullptr, 6, 1); // channel 6, hidden
-    chan = 6;
+    // Set device as a Wi-Fi Station
+    WiFi.mode(WIFI_STA);
 
-    Serial.print("Server SOFT AP MAC Address: ");
-    Serial.println(WiFi.softAPmacAddress());
-    Serial.print("Channel: ");
-    Serial.println(chan);
+    // Init ESP-NOW
+    if (esp_now_init() != ESP_OK)
+    {
+        Serial.println("Error initializing ESP-NOW");
+        return;
+    }
 
-    initESP_NOW();
+    // Once ESPNow is successfully Init, we will register for Send CB to
+    // get the status of Trasnmitted packet
+    esp_now_register_send_cb(esp_now_send_cb_t(OnDataSent));
+
+    // Register peer
+    memcpy(peerInfo.peer_addr, serverAddress, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+
+    // Add peer
+    if (esp_now_add_peer(&peerInfo) != ESP_OK)
+    {
+        Serial.println("Failed to add peer");
+        return;
+    }
+    // Register for a callback function that will be called when data is received
+    esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
 }
 void loop()
 {
+    // void outgoing_message(float 2, float 3, float 6.7);
+    // Send message via ESP-NOW every 30 seconds
     // LVGL events handle interactions
     // doWork();
     // esp_task_wdt_reset();
