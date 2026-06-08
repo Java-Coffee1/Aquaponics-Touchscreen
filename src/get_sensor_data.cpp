@@ -243,3 +243,47 @@ void save_all_sensors_to_file()
     serializeJsonPretty(doc, file);
     file.close();
 }
+
+void get_sensor_list()
+{
+    File file = LittleFS.open("/sensor_config.json", "r");
+    if (!file)
+        return;
+
+    StaticJsonDocument<4096> doc;
+    DeserializationError err = deserializeJson(doc, file);
+    file.close();
+
+    if (err)
+        return;
+
+    sensor_count = 0;
+
+    // -------- sensors_two_point --------
+    JsonArray arr1 = doc["sensors_two_point"];
+    for (JsonObject s : arr1)
+    {
+        if (sensor_count < MAX_SENSORS)
+        {
+            sensors_list[sensor_count++] = s["id"].as<String>();
+        }
+    }
+
+    // -------- sensors_height --------
+    JsonArray arr2 = doc["sensors_height"];
+    for (JsonObject s : arr2)
+    {
+        if (sensor_count < MAX_SENSORS)
+        {
+            sensors_list[sensor_count++] = s["id"].as<String>();
+        }
+    }
+}
+
+// little happy function to format float with fixed precision for display
+std::string fmt_float(float v, int precision)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.*f", precision, v);
+    return std::string(buf);
+}
