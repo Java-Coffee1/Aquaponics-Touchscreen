@@ -30,6 +30,9 @@ esp_now_peer_info_t peerInfo;
 //     });
 //     create_sensor_list(objects.sensor_list, array_ofsensor_DATA);
 // }
+//_______________ WiFi Setup ______________//
+const char *ssid = "AquaponicsIOT";
+const char *password = "aquadma134!";
 
 void setup()
 {
@@ -67,9 +70,8 @@ void setup()
         lvgl_port_unlock();
     }
 
-    // ── ESP-NOW (no internet needed) ──────────────────────────
-    // Set device as a Wi-Fi Station
-    WiFi.mode(WIFI_STA);
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.begin(ssid, password);
 
     // Init ESP-NOW
     if (esp_now_init() != ESP_OK)
@@ -98,6 +100,15 @@ void setup()
 }
 void loop()
 {
+    unsigned long currentMillis = millis();
+    if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >= interval))
+    {
+        Serial.print(millis());
+        Serial.println("Reconnecting to WiFi...");
+        WiFi.disconnect();
+        WiFi.reconnect();
+        previousMillis = currentMillis;
+    }
     // void outgoing_message(float 2, float 3, float 6.7);
     // Send message via ESP-NOW every 30 seconds
     // LVGL events handle interactions

@@ -29,6 +29,7 @@ static void btn_event_cb(lv_event_t *e)
             current_calibration_type = 1;
             printf("Button clicked: %s\n", sensor_name);
             lv_scr_load_anim(objects.twopoint_calibration, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+            refresh_sensor_data(String(sensor_name));
             two_point_calibration_refresh();
         }
         else if (sensor_type == 2.0f)

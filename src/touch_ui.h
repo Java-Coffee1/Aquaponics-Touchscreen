@@ -15,8 +15,7 @@
 #include "ui.h"
 #include <string>
 #include "get_sensor_data.h"
-
-
+#include "data_coms/data_communication.h"
 
 void setup_main_ui();
 void setup_ui();
