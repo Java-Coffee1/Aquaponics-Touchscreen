@@ -1,12 +1,13 @@
+
 #pragma once
-#include <demos/lv_demos.h>
 #include <iostream>
 #include <list>
 #include "LittleFS.h"
 #include <ArduinoJson.h>
 #include <vector>
-#include "ui.h"
+#include <string>
 #include "sensor_setup.h"
+#define MAX_SENSORS 50
 
 // ---------------- External Globals ----------------
 // (defined in .cpp)
@@ -19,5 +20,5 @@ extern SensorInformation sensors_info[MAX_SENSORS];
 void get_sensor_list();
 float get_sensor_value(const String &id, SensorField field);
 void write_sensor_value(const String &id, SensorField field, float value);
-
-std::string fmt_float(float v, int precision = 2);
+void load_sensors_to_ram();
+void save_all_sensors_to_file();
