@@ -10,17 +10,23 @@
 
 extern uint8_t serverAddress[];
 
+enum RequestType : uint8_t
+{
+    DATA,
+    REQUEST
+};
+
 typedef struct struct_message
 {
     float board_id;
     String type;
     float reading;
-    float request_type; // 0 for data, 1 for request
+    RequestType request_type; // 0 for data, 1 for request
 } struct_message;
 
 extern esp_now_peer_info_t peerInfo;
 
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len);
-void outgoing_message(float board_id, String type, float reading, float request_type);
-void refresh_sensor_data(String name);
+void outgoing_message(float board_id, String type, float reading, RequestType request_type);
+void api_get_sensor_data(String name);

@@ -29,6 +29,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     Serial.println(len);
     incoming_board_id = incomingMessage.board_id;
     incoming_reading = incomingMessage.reading;
+    incoming_request_type = incomingMessage.request_type;
     Serial.print("Board ID: ");
     Serial.println(incoming_board_id);
     Serial.print("Type: ");
@@ -39,7 +40,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     Serial.println(incoming_request_type);
 }
 
-void outgoing_message(float board_id, String type, float reading, float request_type)
+void outgoing_message(float board_id, String type, float reading, RequestType request_type)
 {
     outgoingMessage.board_id = board_id;
     outgoingMessage.type = type;
@@ -57,10 +58,9 @@ void outgoing_message(float board_id, String type, float reading, float request_
     }
 }
 
-void refresh_sensor_data(String name)
+void api_get_sensor_data(String name)
 {
-    Serial.println(name);
-
-    // Example usage: send a message with board_id=2, sensor_id=3, reading=6.7, request_type=0 (data)
-    outgoing_message(2, name, 6.7, 0);
+    // Serial.println(name);
+    String get_sensor_name = name;
+    outgoing_message(BOARD_ID, get_sensor_name, -255, REQUEST);
 }

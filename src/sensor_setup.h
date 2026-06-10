@@ -7,6 +7,9 @@
 #include <Arduino.h>
 
 #define MAX_SENSORS 50
+#define BOARD_ID 1
+
+extern String get_sensor_name;
 
 // ---------------- Sensor Field Enum ----------------
 

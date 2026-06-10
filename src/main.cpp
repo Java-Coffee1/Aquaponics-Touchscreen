@@ -18,6 +18,8 @@
 
 unsigned long previousMillis = 0;
 unsigned long interval = 30000; // 30 seconds
+unsigned long ui_refresh_PreviousMillis = 0;
+unsigned long ui_refresh_Interval = 1000; // 1s
 
 //_______________________________ ESP NOW SETUP ________________________________
 // resiver of the data
@@ -33,6 +35,8 @@ esp_now_peer_info_t peerInfo;
 //_______________ WiFi Setup ______________//
 const char *ssid = "AquaponicsIOT";
 const char *password = "aquadma134!";
+
+String get_sensor_name = "null";
 
 void setup()
 {
@@ -103,13 +107,27 @@ void setup()
 void loop()
 {
     unsigned long currentMillis = millis();
-    if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >= interval))
+    if (currentMillis - previousMillis >= interval)
     {
-        Serial.print(millis());
-        Serial.println("Reconnecting to WiFi...");
-        WiFi.disconnect();
-        WiFi.reconnect();
         previousMillis = currentMillis;
+
+        if (WiFi.status() != WL_CONNECTED)
+        {
+            Serial.println("Reconnecting to WiFi...");
+            WiFi.disconnect();
+            WiFi.reconnect();
+        }
+    }
+
+    // Every 1 second
+    if (currentMillis - ui_refresh_PreviousMillis >= ui_refresh_Interval)
+    {
+        ui_refresh_PreviousMillis = currentMillis;
+
+        Serial.println("Update sensor data");
+        // refresh_sensor_data(get_sensor_name);
+        two_point_calibration_refresh();
+        sensor_hight_calibration_refresh();
     }
     // void outgoing_message(float 2, float 3, float 6.7);
     // Send message via ESP-NOW every 30 seconds
