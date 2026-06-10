@@ -1,286 +1,160 @@
 #include "get_sensor_data.h"
 
 String sensors_list[MAX_SENSORS];
-SensorInformation sensors_info[MAX_SENSORS];
-
 int sensor_count = 0;
-bool sensors_dirty = false;
 
-// -----------------------------
-// Load ALL sensors into RAM
-// -----------------------------
-void load_sensors_to_ram()
+// ── Single in-RAM copy of the config ──────────────────────────────────────
+static StaticJsonDocument<4096> g_cfg; // lives in RAM for the lifetime of the program
+static bool g_cfg_loaded = false;
+
+void load_sensor_config()
 {
     File file = LittleFS.open("/sensor_config.json", "r");
     if (!file)
         return;
 
-    StaticJsonDocument<4096> doc;
-    if (deserializeJson(doc, file))
-        return;
+    DeserializationError err = deserializeJson(g_cfg, file);
     file.close();
+    if (err)
+        return;
+
+    g_cfg_loaded = true;
+
+    // ── Rebuild sensors_list from the now-resident doc ────────────────────
+    // (keeps get_sensor_list() working exactly as before, just no file I/O)
+    sensor_count = 0;
+
+    for (JsonObject s : g_cfg["sensors_two_point"].as<JsonArray>())
+        if (sensor_count < MAX_SENSORS)
+            sensors_list[sensor_count++] = s["id"].as<String>();
+
+    for (JsonObject s : g_cfg["sensors_height"].as<JsonArray>())
+        if (sensor_count < MAX_SENSORS)
+            sensors_list[sensor_count++] = s["id"].as<String>();
+}
+
+void save_sensor_config() // only touches flash when YOU decide to
+{
+    if (!g_cfg_loaded)
+        return;
+    File file = LittleFS.open("/sensor_config.json", "w");
+    if (!file)
+        return;
+    serializeJson(g_cfg, file);
+    file.close();
+}
+
+// ── get_sensor_list() is now a no-op rebuild from RAM ─────────────────────
+void get_sensor_list() // signature unchanged — callers unaffected
+{
+    if (!g_cfg_loaded)
+        load_sensor_config(); // lazy-load safety net
 
     sensor_count = 0;
 
-    auto loadArray = [&](JsonArray arr)
-    {
-        for (JsonObject s : arr)
-        {
-            if (sensor_count >= MAX_SENSORS)
-                return;
+    for (JsonObject s : g_cfg["sensors_two_point"].as<JsonArray>())
+        if (sensor_count < MAX_SENSORS)
+            sensors_list[sensor_count++] = s["id"].as<String>();
 
-            SensorInformation &sensor = sensors_info[sensor_count++];
-
-            sensor.id = s["id"] | "";
-            sensor.sensor_type = s["sensor_type"] | 0;
-
-            sensor.current = s["current"] | 0;
-            sensor.currnt_vol = s["currnt_vol"] | 0;
-            sensor.avg_vol = s["avg_vol"] | 0;
-
-            sensor.min = s["min"] | 0;
-            sensor.max = s["max"] | 0;
-
-            sensor.last_min = s["last_min"] | 0;
-            sensor.last_max = s["last_max"] | 0;
-
-            sensor.height_offset = s["height_offset"] | 0;
-            sensor.last_height_offset = s["last_height_offset"] | 0;
-        }
-    };
-
-    loadArray(doc["sensors_two_point"]);
-    loadArray(doc["sensors_height"]);
+    for (JsonObject s : g_cfg["sensors_height"].as<JsonArray>())
+        if (sensor_count < MAX_SENSORS)
+            sensors_list[sensor_count++] = s["id"].as<String>();
 }
 
-// -----------------------------
-// Fast RAM lookup
-// -----------------------------
-SensorInformation *find_sensor(const String &id)
+// ── Shared array-search helper (avoids duplication) ──────────────────────
+static JsonObject find_sensor(const String &id)
 {
-    for (int i = 0; i < sensor_count; i++)
-    {
-        if (sensors_info[i].id == id)
-            return &sensors_info[i];
-    }
-    return nullptr;
+    for (JsonObject s : g_cfg["sensors_two_point"].as<JsonArray>())
+        if (s["id"].as<String>() == id)
+            return s;
+
+    for (JsonObject s : g_cfg["sensors_height"].as<JsonArray>())
+        if (s["id"].as<String>() == id)
+            return s;
+
+    return JsonObject(); // null object — callers check with .isNull()
 }
 
-// -----------------------------
-// Read from RAM
-// -----------------------------
+// ── Pure RAM reads ────────────────────────────────────────────────────────
 float get_sensor_value(const String &id, SensorField field)
 {
-    SensorInformation *s = find_sensor(id);
-    if (!s)
+    if (!g_cfg_loaded)
+        return NAN;
+
+    JsonObject s = find_sensor(id);
+    if (s.isNull())
         return NAN;
 
     switch (field)
     {
     case CURRENT:
-        return s->current;
+        return s["current"] | NAN;
     case SENSOR_TYPE:
-        return s->sensor_type;
+        return s["sensor_type"] | NAN;
     case CURRENT_VOL:
-        return s->currnt_vol;
+        return s["currnt_vol"] | NAN;
     case AVG_VOL:
-        return s->avg_vol;
+        return s["avg_vol"] | NAN;
     case MIN:
-        return s->min;
+        return s["min"] | NAN;
     case MAX:
-        return s->max;
+        return s["max"] | NAN;
     case LAST_MIN:
-        return s->last_min;
+        return s["last_min"] | NAN;
     case LAST_MAX:
-        return s->last_max;
+        return s["last_max"] | NAN;
     case HEIGHT_OFFSET:
-        return s->height_offset;
+        return s["height_offset"] | NAN;
     case LAST_HEIGHT_OFFSET:
-        return s->last_height_offset;
+        return s["last_height_offset"] | NAN;
     }
-
     return NAN;
 }
 
-// -----------------------------
-// Write to RAM + JSON sync
-// -----------------------------
+// ── Pure RAM writes (flash only when save_sensor_config() is called) ──────
 void write_sensor_value(const String &id, SensorField field, float value)
 {
-    SensorInformation *s = find_sensor(id);
-    if (!s)
+    if (!g_cfg_loaded)
+        return;
+
+    JsonObject s = find_sensor(id);
+    if (s.isNull())
         return;
 
     switch (field)
     {
     case CURRENT:
-        s->current = value;
+        s["current"] = value;
         break;
     case CURRENT_VOL:
-        s->currnt_vol = value;
+        s["currnt_vol"] = value;
         break;
     case AVG_VOL:
-        s->avg_vol = value;
+        s["avg_vol"] = value;
         break;
     case MIN:
-        s->min = value;
+        s["min"] = value;
         break;
     case MAX:
-        s->max = value;
+        s["max"] = value;
         break;
     case LAST_MIN:
-        s->last_min = value;
+        s["last_min"] = value;
         break;
     case LAST_MAX:
-        s->last_max = value;
+        s["last_max"] = value;
         break;
     case HEIGHT_OFFSET:
-        s->height_offset = value;
+        s["height_offset"] = value;
         break;
     case LAST_HEIGHT_OFFSET:
-        s->last_height_offset = value;
+        s["last_height_offset"] = value;
         break;
-    default:
-        return;
     }
-    sensors_dirty = true;
-}
-// -----------------------------
-// Add sensor (RAM + file reload)
-// -----------------------------
-void add_sensor(const String &id, const String &type)
-{
-    File file = LittleFS.open("/sensor_config.json", "r");
-    if (!file)
-        return;
-
-    StaticJsonDocument<4096> doc;
-    if (deserializeJson(doc, file))
-        return;
-    file.close();
-
-    JsonArray targetArray;
-
-    if (type == "two_point")
-        targetArray = doc["sensors_two_point"];
-    else if (type == "height")
-        targetArray = doc["sensors_height"];
-    else
-        return;
-
-    JsonObject sensor = targetArray.createNestedObject();
-
-    sensor["id"] = id;
-    sensor["sensor_type"] = 0;
-
-    sensor["current"] = 0;
-    sensor["currnt_vol"] = 0;
-    sensor["avg_vol"] = 0;
-
-    sensor["min"] = 0;
-    sensor["max"] = 0;
-
-    sensor["last_min"] = 0;
-    sensor["last_max"] = 0;
-
-    sensor["height_offset"] = 0;
-    sensor["last_height_offset"] = 0;
-
-    file = LittleFS.open("/sensor_config.json", "w");
-    if (!file)
-        return;
-
-    serializeJsonPretty(doc, file);
-    file.close();
-
-    // refresh RAM after change
-    load_sensors_to_ram();
+    // No file write here — call save_sensor_config() when you're ready to persist
 }
 
-void save_all_sensors_to_file()
-{
-    File file = LittleFS.open("/sensor_config.json", "w");
-    if (!file)
-        return;
-
-    StaticJsonDocument<4096> doc;
-
-    JsonArray arr1 = doc.createNestedArray("sensors_two_point");
-    JsonArray arr2 = doc.createNestedArray("sensors_height");
-
-    for (int i = 0; i < sensor_count; i++)
-    {
-        SensorInformation &s = sensors_info[i];
-
-        JsonObject obj;
-
-        if (s.sensor_type == 0)
-        {
-            obj = arr1.createNestedObject();
-        }
-        else
-        {
-            obj = arr2.createNestedObject();
-        }
-
-        obj["id"] = s.id;
-        obj["sensor_type"] = s.sensor_type;
-
-        obj["current"] = s.current;
-        obj["currnt_vol"] = s.currnt_vol;
-        obj["avg_vol"] = s.avg_vol;
-
-        obj["min"] = s.min;
-        obj["max"] = s.max;
-
-        obj["last_min"] = s.last_min;
-        obj["last_max"] = s.last_max;
-
-        obj["height_offset"] = s.height_offset;
-        obj["last_height_offset"] = s.last_height_offset;
-    }
-
-    serializeJsonPretty(doc, file);
-    file.close();
-}
-
-void get_sensor_list()
-{
-    File file = LittleFS.open("/sensor_config.json", "r");
-    if (!file)
-        return;
-
-    StaticJsonDocument<4096> doc;
-    DeserializationError err = deserializeJson(doc, file);
-    file.close();
-
-    if (err)
-        return;
-
-    sensor_count = 0;
-
-    // -------- sensors_two_point --------
-    JsonArray arr1 = doc["sensors_two_point"];
-    for (JsonObject s : arr1)
-    {
-        if (sensor_count < MAX_SENSORS)
-        {
-            sensors_list[sensor_count++] = s["id"].as<String>();
-        }
-    }
-
-    // -------- sensors_height --------
-    JsonArray arr2 = doc["sensors_height"];
-    for (JsonObject s : arr2)
-    {
-        if (sensor_count < MAX_SENSORS)
-        {
-            sensors_list[sensor_count++] = s["id"].as<String>();
-        }
-    }
-}
-
-// little happy function to format float with fixed precision for display
+// ── Utility ───────────────────────────────────────────────────────────────
 std::string fmt_float(float v, int precision)
 {
     char buf[32];

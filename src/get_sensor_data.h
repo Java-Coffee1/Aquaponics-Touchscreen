@@ -20,7 +20,7 @@ extern SensorInformation sensors_info[MAX_SENSORS];
 void get_sensor_list();
 float get_sensor_value(const String &id, SensorField field);
 void write_sensor_value(const String &id, SensorField field, float value);
-void load_sensors_to_ram();
-void save_all_sensors_to_file();
+void load_sensor_config(); // call once in setup()
+void save_sensor_config(); // call when you want to persist to flash
 
 std::string fmt_float(float v, int precision = 2);

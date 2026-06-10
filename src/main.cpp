@@ -55,6 +55,8 @@ void setup()
     }
     file.close();
 
+    load_sensor_config();
+
     static esp_lcd_panel_handle_t panel_handle = NULL;
     static esp_lcd_touch_handle_t tp_handle = NULL;
     tp_handle = touch_gt911_init();
