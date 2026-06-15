@@ -10,11 +10,27 @@
 #define MAX_SENSORS 50
 
 // ---------------- External Globals ----------------
-// (defined in .cpp)
+struct Sensor
+{
+    String id;
+    String sensor_type;
+
+    float current = 0;
+
+    int current_vol = 0;
+    int avg_vol = 0;
+    int max = 0;
+    int min = 0;
+    int last_max = 0;
+    int last_min = 0;
+
+    int height_offset = 0;
+    int last_height_offset = 0;
+};
+extern std::vector<Sensor> sensors;
 extern String sensors_list[MAX_SENSORS];
 extern int sensor_count;
-
-extern SensorInformation sensors_info[MAX_SENSORS];
+extern std::vector<Sensor> sensors;
 
 // ---------------- Function Prototypes ----------------
 void get_sensor_list();

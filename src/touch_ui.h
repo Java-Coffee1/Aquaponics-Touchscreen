@@ -16,6 +16,13 @@
 #include <string>
 #include "get_sensor_data.h"
 #include "data_coms/data_communication.h"
+#include "sensor_setup.h"
+
+enum CalibrationType
+{
+    CAL_TWOPOINT,
+    CAL_HEIGHT_OFFSET
+};
 
 void setup_main_ui();
 void setup_ui();

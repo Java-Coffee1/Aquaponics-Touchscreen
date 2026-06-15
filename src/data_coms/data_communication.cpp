@@ -7,7 +7,7 @@ String success;
 
 float incoming_board_id;
 float incoming_reading;
-float incoming_request_type;
+RequestType incoming_request_type;
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
     Serial.print("\r\nLast Packet Send Status:\t");
@@ -24,7 +24,7 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
-    memcpy(&incomingMessage, incomingData, sizeof(incomingMessage));
+    memcpy(&incomingMessage, incomingData, sizeof(incomingMessage)); // now safe — POD only
     Serial.print("Bytes received: ");
     Serial.println(len);
     incoming_board_id = incomingMessage.board_id;
@@ -33,7 +33,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
     Serial.print("Board ID: ");
     Serial.println(incoming_board_id);
     Serial.print("Type: ");
-    Serial.println(incomingMessage.type);
+    Serial.println(incomingMessage.type); // char[] prints fine
     Serial.print("Reading: ");
     Serial.println(incoming_reading);
     Serial.print("Request Type: ");
@@ -43,19 +43,16 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 void outgoing_message(float board_id, String type, float reading, RequestType request_type)
 {
     outgoingMessage.board_id = board_id;
-    outgoingMessage.type = type;
+    strncpy(outgoingMessage.type, type.c_str(), SENSOR_NAME_MAX_LEN - 1);
+    outgoingMessage.type[SENSOR_NAME_MAX_LEN - 1] = '\0'; // ensure null termination
     outgoingMessage.reading = reading;
     outgoingMessage.request_type = request_type;
 
     esp_err_t result = esp_now_send(serverAddress, (uint8_t *)&outgoingMessage, sizeof(outgoingMessage));
     if (result == ESP_OK)
-    {
         Serial.println("Sent with success");
-    }
     else
-    {
         Serial.println("Error sending the data");
-    }
 }
 
 void api_get_sensor_data(String name)

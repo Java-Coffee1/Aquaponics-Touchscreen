@@ -8,18 +8,21 @@
 #include "sensor_setup.h"
 #include "get_sensor_data.h"
 
+#define SENSOR_NAME_MAX_LEN 32
+
 extern uint8_t serverAddress[];
 
 enum RequestType : uint8_t
 {
     DATA,
-    REQUEST
+    REQUEST,
+    SENSOR_LIST
 };
 
 typedef struct struct_message
 {
     float board_id;
-    String type;
+    char type[SENSOR_NAME_MAX_LEN];
     float reading;
     RequestType request_type; // 0 for data, 1 for request
 } struct_message;

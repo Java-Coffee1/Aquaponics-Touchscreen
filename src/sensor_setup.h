@@ -12,6 +12,11 @@
 extern String get_sensor_name;
 
 // ---------------- Sensor Field Enum ----------------
+enum SensorType : uint8_t
+{
+    TWOPOINT,
+    OFFSET_HIGHT
+};
 
 enum SensorField : uint8_t
 {

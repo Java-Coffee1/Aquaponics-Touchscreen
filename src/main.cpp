@@ -19,7 +19,7 @@
 unsigned long previousMillis = 0;
 unsigned long interval = 30000; // 30 seconds
 unsigned long ui_refresh_PreviousMillis = 0;
-unsigned long ui_refresh_Interval = 1000; // 1s
+unsigned long ui_refresh_Interval = 5000; // 5 seconds
 
 //_______________________________ ESP NOW SETUP ________________________________
 // resiver of the data

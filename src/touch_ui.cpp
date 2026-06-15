@@ -8,7 +8,7 @@ int current_calibration_step = 0;
 // 1 - setting min
 // 2 - setting max
 // 3 - setting height offset
-int current_calibration_type = 0;
+int current_calibration_type;
 // 0 - not selected
 // 1 - two point calibration
 // 2 - height calibration
@@ -23,21 +23,26 @@ static void btn_event_cb(lv_event_t *e)
         // Get sensor name from user data
         const char *sensor_name = (const char *)lv_event_get_user_data(e);
         current_sensor_edit = sensor_name;
-        float sensor_type = get_sensor_value(sensor_name, SENSOR_TYPE);
-        if (sensor_type == 1.0f)
-        { // sensors_two_point
-            current_calibration_type = 1;
+        int sensor_type = get_sensor_value(sensor_name, SENSOR_TYPE);
+        switch (sensor_type)
+        {
+        case TWOPOINT:
             printf("Button clicked: %s\n", sensor_name);
             lv_scr_load_anim(objects.twopoint_calibration, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
             api_get_sensor_data(String(sensor_name));
             two_point_calibration_refresh();
-        }
-        else if (sensor_type == 2.0f)
-        { // sensors_height
+            current_calibration_type = CAL_TWOPOINT;
+            break;
+        case HEIGHT_OFFSET:
             current_calibration_type = 2;
             printf("Button clicked: %s\n", sensor_name);
             lv_scr_load_anim(objects.sensor_hight, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
             sensor_hight_calibration_refresh();
+            current_calibration_type = CAL_HEIGHT_OFFSET;
+            break;
+
+        default:
+            break;
         }
     }
 }
@@ -229,8 +234,9 @@ static void table_style(lv_event_t *e)
 void information_table(lv_obj_t *parent, const std::string &sensor_name)
 {
     lv_obj_t *table = lv_table_create(parent);
-    // get sensor type and value
-    if (current_calibration_type == 1)
+    switch (current_calibration_type)
+    {
+    case CAL_TWOPOINT:
     {
         std::string current = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT));
         std::string current_vol = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT_VOL));
@@ -240,7 +246,6 @@ void information_table(lv_obj_t *parent, const std::string &sensor_name)
         std::string last_min = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MIN));
         std::string last_max = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_MAX));
 
-        /*Fill the first column*/
         lv_table_set_cell_value(table, 0, 0, sensor_name.c_str());
         lv_table_set_cell_value(table, 1, 0, "Current pH");
         lv_table_set_cell_value(table, 2, 0, "Current Voltage");
@@ -250,7 +255,6 @@ void information_table(lv_obj_t *parent, const std::string &sensor_name)
         lv_table_set_cell_value(table, 6, 0, "Last Min");
         lv_table_set_cell_value(table, 7, 0, "Last Max");
 
-        /*Fill the second column*/
         lv_table_set_cell_value(table, 0, 1, "Value");
         lv_table_set_cell_value(table, 1, 1, current.c_str());
         lv_table_set_cell_value(table, 2, 1, current_vol.c_str());
@@ -259,30 +263,30 @@ void information_table(lv_obj_t *parent, const std::string &sensor_name)
         lv_table_set_cell_value(table, 5, 1, max.c_str());
         lv_table_set_cell_value(table, 6, 1, last_min.c_str());
         lv_table_set_cell_value(table, 7, 1, last_max.c_str());
+        break;
     }
-    else if (current_calibration_type == 2)
+
+    case CAL_HEIGHT_OFFSET:
     {
         std::string current = fmt_float(get_sensor_value(sensor_name.c_str(), CURRENT));
         std::string height_offset = fmt_float(get_sensor_value(sensor_name.c_str(), HEIGHT_OFFSET));
         std::string last_height_offset = fmt_float(get_sensor_value(sensor_name.c_str(), LAST_HEIGHT_OFFSET));
 
-        /*Fill the first column*/
         lv_table_set_cell_value(table, 0, 0, sensor_name.c_str());
         lv_table_set_cell_value(table, 1, 0, "Current Height");
         lv_table_set_cell_value(table, 2, 0, "Height Offset");
         lv_table_set_cell_value(table, 3, 0, "Last Height Offset");
 
-        /*Fill the second column*/
         lv_table_set_cell_value(table, 0, 1, "Value");
         lv_table_set_cell_value(table, 1, 1, current.c_str());
         lv_table_set_cell_value(table, 2, 1, height_offset.c_str());
         lv_table_set_cell_value(table, 3, 1, last_height_offset.c_str());
+        break;
+    }
     }
 
-    /*Set a smaller height to the table. It'll make it scrollable*/
     lv_obj_set_height(table, 350);
     lv_obj_center(table);
-    /*Add an event callback to to apply some custom drawing*/
     lv_obj_add_event_cb(table, table_style, LV_EVENT_DRAW_PART_BEGIN, NULL);
 }
 
